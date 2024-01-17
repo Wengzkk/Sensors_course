@@ -1,0 +1,61 @@
+#include <iocc2530.h>
+#include <stdio.h>
+#include "./uart/hal_uart.h"
+#include "./iic/iic.h"
+#include "ms5611.h"
+
+#define uchar unsigned char
+#define uint unsigned int 
+#define uint8 uchar
+#define uint16 uint
+#define TRUE 1
+#define FALSE 0
+#define LED1 P1_0
+#define LED2 P1_1
+
+void delay_us(uint32 delay_us);
+void delay_ms(uint16 delay_ms);
+void InitLed(void);
+
+void main(void);
+
+#pragma vector = URX0_VECTOR
+__interrupt void UART0_ISR(void);
+
+void delay_us(uint32 delay_us) {
+    // 实现微秒级延时
+}
+
+void delay_ms(uint16 delay_ms) {
+    // 实现毫秒级延时
+}
+
+void InitLed(void) {
+    // 初始化 LED 引脚方向等
+}
+
+void main(void) {
+    InitUart();  // 初始化串口
+    InitLed();   // 初始化 LED
+
+    while (1) {
+        // 主循环，可以添加其他逻辑
+
+        // 示例：获取 MS5611 传感器的温度和气压数据
+        MS5611_Data ms5611Data = get_ms5611_data();
+
+        // 示例：通过串口输出数据
+        printf("Temperature: %d, Pressure: %d\r\n", ms5611Data.temperature, ms5611Data.pressure);
+
+        // 示例：LED 控制逻辑
+        LED1 = !LED1;
+        delay_ms(1000);
+        LED2 = !LED2;
+        delay_ms(1000);
+    }
+}
+
+#pragma vector = URX0_VECTOR
+__interrupt void UART0_ISR(void) {
+    // 串口接收中断处理逻辑
+}

@@ -1,0 +1,73 @@
+#include <stdio.h>
+
+// 定义I2C通信引脚
+#define SCL P1_3
+#define SDA P1_2
+
+// 陀螺仪配置寄存器和加速度计配置寄存器
+#define MPU6050_GYRO_CONFIG	0x10
+#define MPU6050_ACCEL_CONFIG	0x10
+
+// 从MPU6050陀螺仪加速度计模块读取指定寄存器的数据
+uint MPU6050_ReadReg(uint reg) {
+    // 实现具体的读取寄存器的功能
+    // ...
+}
+
+// 从MPU6050陀螺仪加速度计模块读取X、Y、Z轴的加速度计和陀螺仪的原始数据
+void MPU6050_GetData(int* AX, int* AY, int* AZ, int* GX, int* GY, int* GZ) {
+    uint DataH, DataL;
+    DataH = MPU6050_ReadReg(MPU6050_ACCEL_XOUT_H);
+    DataL = MPU6050_ReadReg(MPU6050_ACCEL_XOUT_L);
+    *AX = (DataH << 8 | DataL);
+    // 读取Y、Z轴的数据，类似处理
+    // ...
+    DataH = MPU6050_ReadReg(MPU6050_GYRO_XOUT_H);
+    DataL = MPU6050_ReadReg(MPU6050_GYRO_XOUT_L);
+    *GX = (DataH << 8 | DataL);
+    // 读取Y、Z轴的数据，类似处理
+    // ...
+}
+
+// 结构体用于存储加速度计和陀螺仪的物理值
+struct MPU6050_Data {
+    float accel_x;
+    float accel_y;
+    float accel_z;
+    float gyro_x;
+    float gyro_y;
+    float gyro_z;
+};
+
+// 从MPU6050陀螺仪加速度计模块读取原始的加速度计和陀螺仪数据，并将其乘以比例尺转换为实际的物理值
+MPU6050_Data MPU6050_GetDataWithScale() {
+    int AX, AY, AZ, GX, GY, GZ;
+    MPU6050_GetData(&AX, &AY, &AZ, &GX, &GY, &GZ);
+    float accel_scale = 8.0 / 32767.0; // 加速度计量程为 +/- 8g
+    float gyro_scale = 1000.0 / 32767.0; // 陀螺仪量程为 +/- 1000°/s
+    MPU6050_Data data;
+    data.accel_x = AX * accel_scale;
+    data.accel_y = AY * accel_scale;
+    data.accel_z = AZ * accel_scale;
+    data.gyro_x = GX * gyro_scale;
+    data.gyro_y = GY * gyro_scale;
+    data.gyro_z = GZ * gyro_scale;
+    return data;
+}
+
+// 初始化串口通信
+void InitUart() {
+    // 实现具体的串口初始化操作
+    // ...
+}
+
+// 主函数，通过循环读取MPU6050模块的数据并通过串口打印输出
+int main(void) {
+    InitUart(); // 初始化串口
+    while(1) {
+        MPU6050_Data data = MPU6050_GetDataWithScale();
+        printf("AX: %.2f g\n AY: %.2f g\n AZ: %.2f g\n", data.accel_x, data.accel_y, data.accel_z);
+        printf("GX: %.2f °/s\n GY: %.2f °/s\n GZ: %.2f °/s\n", data.gyro_x, data.gyro_y, data.gyro_z);
+    }
+    return 0;
+}

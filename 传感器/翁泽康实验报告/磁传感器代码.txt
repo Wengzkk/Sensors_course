@@ -1,0 +1,80 @@
+#include <stdio.h>
+
+#define SCL P1_3
+#define SDA P1_2
+#define I2C_ADDR 0x1E // HMC5883L I2C地址
+
+// 模拟I2C通信函数，这里只是为了演示，实际应用中需替换为真实的I2C通信函数
+void I2C_Start() {
+    // 模拟I2C起始信号
+}
+
+void I2C_Stop() {
+    // 模拟I2C停止信号
+}
+
+void I2C_WriteByte(unsigned char byte) {
+    // 模拟I2C写入字节
+}
+
+unsigned char I2C_ReadByte() {
+    // 模拟I2C读取字节
+    return 0;
+}
+
+// 初始化HMC5883L
+void HMC5883L_Init() {
+    I2C_Start();
+    I2C_WriteByte(I2C_ADDR);
+    I2C_WriteByte(0x00); // 配置模式寄存器
+    I2C_WriteByte(0x10); // 设置为连续测量模式
+    I2C_Stop();
+}
+
+// 读取HMC5883L数据
+typedef struct {
+    int raw_x;
+    int raw_y;
+    int raw_z;
+    float x;
+    float y;
+    float z;
+} HMC5883L_Data;
+
+HMC5883L_Data HMC5883L_ReadData() {
+    HMC5883L_Data data;
+    I2C_Start();
+    I2C_WriteByte(I2C_ADDR);
+    I2C_WriteByte(0x03);
+    I2C_Start();
+    I2C_WriteByte(I2C_ADDR | 0x01);
+    data.raw_x = (I2C_ReadByte() << 8) | I2C_ReadByte();
+    data.raw_z = (I2C_ReadByte() << 8) | I2C_ReadByte();
+    data.raw_y = (I2C_ReadByte() << 8) | I2C_ReadByte();
+    I2C_Stop();
+
+    // 进行单位换算
+    float sensitivity = 0.92; // 灵敏度（单位：LSB/Gauss）
+    float offset = 100.0;    // 偏移量（单位：高斯）
+    data.x = (data.raw_x * sensitivity) + offset;
+    data.y = (data.raw_y * sensitivity) + offset;
+    data.z = (data.raw_z * sensitivity) + offset;
+
+    return data;
+}
+
+int main(void) {
+    // 模拟串口初始化
+    printf("Init UART with baudrate: 57600\n");
+
+    // 初始化HMC5883L
+    HMC5883L_Init();
+
+    // 读取并输出磁场强度数据
+    while (1) {
+        HMC5883L_Data data = HMC5883L_ReadData();
+        printf("Bx: %f, By: %f, Bz: %f\n", data.x, data.y, data.z);
+    }
+
+    return 0;
+}

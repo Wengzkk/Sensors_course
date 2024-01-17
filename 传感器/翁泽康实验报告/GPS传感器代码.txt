@@ -1,0 +1,84 @@
+// 1. 配置UART通信引脚
+#define UART_RX_PORT    P0_2
+#define UART_TX_PORT    P0_3
+#define UART_RX_PIN     BV(2)
+#define UART_TX_PIN     BV(3)
+
+// 2. 定义全局变量
+double latitude = 0.0;
+double longitude = 0.0;
+
+// 3. 实现gpsDataCollection()函数
+void gpsDataCollection()
+{
+    uint8_t data;
+    uint8_t gpsData[128];
+    uint8_t dataIndex = 0;
+    uint8_t nmeaStartIndex = 0;
+    uint8_t nmeaEndIndex = 0;
+
+    while (1) {
+        // 接收一个字节
+        data = uartReceiveByte();
+        // 判断是否是NMEA协议的起始字节
+        if (data == '$') {
+            nmeaStartIndex = dataIndex; // 记录NMEA协议的起始位置 
+            gpsData[dataIndex++] = data;  // 存储接收到的数据
+        }
+        // 判断是否接收到完整的NMEA协议
+        if (data == '\n') {
+            nmeaEndIndex = dataIndex;  // 记录NMEA协议的结束位置
+            // 处理接收到的完整NMEA协议数据
+            uint8_t nmeaLength = nmeaEndIndex - nmeaStartIndex;
+            processNmeaData(&gpsData[nmeaStartIndex], nmeaLength);
+            // 重置索引，准备接收下一条数据
+            dataIndex = 0;
+            nmeaStartIndex = 0;
+            nmeaEndIndex = 0;
+        }
+    }
+}
+
+// 4. 实现processNmeaData()函数
+void processNmeaData(uint8_t *nmeaData, uint8_t dataLength)
+{
+    // 检查数据是否以"$"开头，以保证是有效的NMEA协议数据
+    if (nmeaData[0] == '$') {
+        // 检查数据是否是GGA协议，GGA协议中包含经纬度信息
+        if (strncmp((const char*)nmeaData + 1, "GGA", 3) == 0) {
+            // 使用strtok函数分割数据字段
+            char *token = strtok((char*)nmeaData, ",");
+            uint8_t fieldIndex = 0;
+            while (token != NULL) {
+                // 经纬度信息通常在第3个和第5个字段中
+                if (fieldIndex == 2) {
+                    // 解析纬度信息（以度为单位）
+                    latitude = atof(token);
+                    // 在此处进行纬度信息的处理
+                } else if (fieldIndex == 4) {
+                    // 解析经度信息（以度为单位）
+                    longitude = atof(token);
+                    // 在此处进行经度信息的处理
+                }
+                token = strtok(NULL, ",");
+                fieldIndex++;
+            }
+        }
+    }
+}
+
+// 5. 实现main()函数
+int main(void)
+{
+    uartInit();  // 初始化UART
+
+    while (1) {
+        gpsDataCollection();  // 开始GPS数据采集
+
+        // 在这里添加打印经纬度的代码
+        printf("Latitude: %.6f\n", latitude);
+        printf("Longitude: %.6f\n", longitude);
+    }
+
+    return 0;
+}
